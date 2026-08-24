@@ -1,6 +1,6 @@
-# SilverCare 樂齡伴伴
+# 暖日 WarmDay
 
-SilverCare（樂齡伴伴）是一款為銀髮族與家人照顧者設計的健康陪伴 Web App。
+暖日（WarmDay）是一款為長輩與家人照顧者設計的健康陪伴 Web App。以「每天多一點健康，多一點安心」為理念，讓健康管理成為溫暖而不造成負擔的日常。
 
 > 一按就安心，需要時才多問一句。
 
@@ -78,4 +78,3 @@ pnpm build
 - Web Speech API
 - Web Bluetooth API
 - Vibration API
-
