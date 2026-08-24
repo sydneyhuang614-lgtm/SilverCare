@@ -63,7 +63,7 @@ export default function Home() {
 
   if (!loggedIn) return <main className="login-page">
     <section className="login-panel">
-      <div className="login-brand"><span>伴</span><strong>樂齡伴伴</strong></div>
+      <div className="login-brand"><span>暖</span><strong>暖日 <small>WarmDay</small></strong></div>
       <p className="login-eyebrow">方便一點，溫暖多一點</p>
       <h1>歡迎回來</h1>
       <h2>請選擇您今天要使用的方式</h2>
@@ -73,12 +73,12 @@ export default function Home() {
       </div>
       <div className="login-note"><span>✓</span><p><strong>展示模式不需要輸入密碼</strong><br/>正式版本會使用手機號碼或生物辨識安全登入。</p></div>
     </section>
-    <aside className="login-warmth"><div className="sun-shape"/><p>每天一句問候，<br/>讓關心不成為負擔。</p><small>樂齡伴伴陪您慢慢來</small></aside>
+    <aside className="login-warmth"><div className="sun-shape"/><p>每天一句問候，<br/>讓關心不成為負擔。</p><small>暖日陪您慢慢來</small></aside>
   </main>;
 
   return <main className="senior-app" style={{"--font-scale":fontSize} as React.CSSProperties}>
     <header className="senior-header">
-      <div className="senior-brand"><span>伴</span><div><strong>樂齡伴伴</strong><small>{role === "senior" ? "您的貼心健康管家" : "家人照顧者中心"}</small></div></div>
+      <div className="senior-brand"><span>暖</span><div><strong>暖日 WarmDay</strong><small>{role === "senior" ? "您的貼心健康管家" : "家人照顧者中心"}</small></div></div>
       <div className="header-tools"><div className="font-tools" aria-label="調整字體"><button onClick={() => setFontSize(Math.max(.9,fontSize-.1))}>A−</button><span>字體</span><button onClick={() => setFontSize(Math.min(1.3,fontSize+.1))}>A＋</button></div><div className="language-tools"><button className={language === "zh" ? "selected" : ""} onClick={() => setLanguage("zh")}>中文</button><button className={language === "tw" ? "selected" : ""} onClick={() => setLanguage("tw")}>台語</button></div><button className="family-entry" onClick={switchRole}><span>{role === "senior" ? "家" : "伴"}</span>{role === "senior" ? "家人模式" : "回長輩端"}</button><button className="logout-button" onClick={()=>setLoggedIn(false)}>登出</button></div>
     </header>
 
