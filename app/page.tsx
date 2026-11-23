@@ -2,9 +2,7 @@
 import { useEffect, useState } from "react";
 
 const jokes = [
-  "阿公問孫子：為什麼電腦一直叫我按任意鍵？我找半天都沒看到『任意』鍵啊！",
-  "番茄走在路上跌倒了，旁邊的朋友說：沒事，慢慢來，別變成番茄醬！",
-  "冰箱為什麼很有禮貌？因為每次打開門，它都會先亮燈歡迎你！",
+  "有一位農夫叫阿華，他的夢想是擁有一片自己的——阿華田！",
 ];
 const copy = {
   zh: { hello:"王奶奶，早安！", ask:"今天感覺好嗎？", safe:"我今天很好", safeHint:"按一下，讓家人放心", help:"我需要幫忙", noForm:"不用填資料，也不會催促您", noFormHint:"一天按一下，就完成今天的平安報到。" },
@@ -125,3 +123,4 @@ function FamilyView({onBack,onSendMessage}:{onBack:()=>void;onSendMessage:(messa
     <section className="pressure-panel"><div className="pressure-head"><div><p>藍牙血壓紀錄</p><h2>每一次測量，自動讓家人看見</h2><small>僅供日常紀錄；身體不適時請聯絡醫療人員。</small></div><button className={`connect-device ${connection}`} onClick={connectBloodPressure} disabled={connection==="connecting"||connection==="connected"}>{connection==="connecting"?"正在尋找…":connection==="connected"?`✓ 已連接 ${deviceName}`:"＋ 連接血壓計"}</button></div>{connection==="unsupported"&&<div className="device-message warning">此瀏覽器不支援藍牙連線，請使用支援 Web Bluetooth 的瀏覽器或手機 App。</div>}{connection==="failed"&&<div className="device-message warning">無法連線。請確認血壓計已開啟藍牙，且採用標準血壓服務。</div>}<div className="pressure-table"><div className="pressure-row pressure-labels"><span>測量時間</span><span>收縮壓</span><span>舒張壓</span><span>脈搏</span></div>{readings.map(item=><div className="pressure-row" key={item.date}><strong>{item.date}</strong><span><b>{item.sys}</b> mmHg</span><span><b>{item.dia}</b> mmHg</span><span><b>{item.pulse||"—"}</b> bpm</span></div>)}</div></section>
     <div className="family-lower"><article className="voice-message-panel"><div><p>家人語音留言</p><h2>讓媽媽聽見熟悉的關心</h2><small>選一句問候，暖日會用溫柔語音播放。</small></div><div className="quick-messages"><button className={selectedMessage.startsWith("今天")?"selected":""} onClick={()=>{setSelectedMessage("今天也要慢慢來喔，記得喝水。");setMessageSent(false)}}>今天慢慢來 🌿</button><button className={selectedMessage.startsWith("晚上")?"selected":""} onClick={()=>{setSelectedMessage("晚上我再打電話給您，想您喔。");setMessageSent(false)}}>晚上打給您 ♥</button><button className={selectedMessage.startsWith("天氣")?"selected":""} onClick={()=>{setSelectedMessage("天氣有點涼，出門記得穿外套。");setMessageSent(false)}}>記得穿外套</button></div><div className="message-preview">「{selectedMessage}」</div><button className="send-voice-message" onClick={()=>{onSendMessage(selectedMessage);setMessageSent(true)}}>{messageSent?"✓ 已放到媽媽的陪伴卡":"送出語音留言"}</button></article><article><p>需要留意</p><div className="no-alert">✓ 目前沒有異常狀況</div><small>只有未報到或主動求助時才會通知您。</small></article></div><button className="family-back" onClick={onBack}>← 回到長輩端</button></section>;
 }
+
