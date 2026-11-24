@@ -50,10 +50,20 @@ export default function Home() {
     if (!("speechSynthesis" in window)) return;
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "zh-TW"; utterance.rate = .78; utterance.pitch = .92; utterance.volume = .9;
+    utterance.lang = "zh-TW"; utterance.rate = .72; utterance.pitch = 1.04; utterance.volume = .86;
     const voices = window.speechSynthesis.getVoices();
-    const taiwanVoice = voices.find(v => v.lang.toLowerCase().includes("zh-tw"));
-    if (taiwanVoice) utterance.voice = taiwanVoice;
+    const preferredVoice = voices
+      .filter(voice => /zh[-_](tw|hant)|chinese.*taiwan/i.test(`${voice.lang} ${voice.name}`))
+      .sort((a,b) => {
+        const gentleScore = (voice:SpeechSynthesisVoice) => {
+          const label = voice.name.toLowerCase();
+          return (/(natural|premium|enhanced)/.test(label)?8:0)
+            + (/(hsiaochen|xiaoxiao|mei-jia|meijia|tingting|female|女)/.test(label)?5:0)
+            + (voice.localService?1:0);
+        };
+        return gentleScore(b)-gentleScore(a);
+      })[0];
+    if (preferredVoice) utterance.voice = preferredVoice;
     window.speechSynthesis.speak(utterance);
   }
   function switchRole() { setRole(role === "senior" ? "family" : "senior"); setMode("home"); }
