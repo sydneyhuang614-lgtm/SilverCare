@@ -43,6 +43,7 @@ export default function Home() {
   const [voiceRate, setVoiceRate] = useState<"slow"|"normal"|"quick">("slow");
   const [introStep, setIntroStep] = useState<number|null>(null);
   const [callOpen, setCallOpen] = useState(false);
+  const [lineStatus, setLineStatus] = useState<"idle"|"sending"|"sent"|"failed">("idle");
   const t = copy[language];
   const exercise = exercises[exerciseIndex];
   useEffect(()=>{if(!exerciseRunning)return;const timer=window.setInterval(()=>setExerciseSeconds(value=>{if(value<=1){window.clearInterval(timer);setExerciseRunning(false);setCompletedExercises(done=>done.includes(exerciseIndex)?done:[...done,exerciseIndex]);return 0}return value-1}),1000);return()=>window.clearInterval(timer)},[exerciseRunning,exerciseIndex]);
@@ -70,9 +71,16 @@ export default function Home() {
     window.speechSynthesis.speak(utterance);
   }
   function switchRole() { setRole(role === "senior" ? "family" : "senior"); setMode("home"); }
-  function reportSafe() { setResting(false); setHelpReason(""); setMode("done"); }
+  async function notifyLine(type:"safe"|"help",detail="") {
+    setLineStatus("sending");
+    try {
+      const response=await fetch("/api/line/notify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type,detail})});
+      setLineStatus(response.ok?"sent":"failed");
+    } catch { setLineStatus("failed"); }
+  }
+  function reportSafe() { setResting(false); setHelpReason(""); setMode("done"); void notifyLine("safe"); }
   function takeRest() { setResting(true); setHelpReason(""); setMode("done"); }
-  function requestHelp(value:string) { setResting(false); setHelpReason(value); setMode("done"); }
+  function requestHelp(value:string) { setResting(false); setHelpReason(value); setMode("done"); void notifyLine("help",value); }
   function chooseCard(index:number){if(selectedCards.includes(index)||matchedCards.includes(index)||selectedCards.length===2)return;const next=[...selectedCards,index];setSelectedCards(next);if(next.length===2){if(memoryCards[next[0]]===memoryCards[next[1]]){window.setTimeout(()=>{setMatchedCards(current=>[...current,...next]);setSelectedCards([])},450)}else{window.setTimeout(()=>setSelectedCards([]),850)}}}
 
   function enterAs(selectedRole:"senior"|"family") {
@@ -120,7 +128,7 @@ export default function Home() {
         {exerciseOpen&&<div className="exercise-overlay" role="dialog" aria-modal="true" aria-label="伸展運動教學"><section className="exercise-modal"><button className="exercise-close" onClick={()=>{setExerciseOpen(false);setExerciseRunning(false);setExerciseSeconds(10)}}>×</button><div className="exercise-image"><img src={exercise.image} alt={exercise.alt}/><div className="exercise-nav"><button disabled={exerciseIndex===0} onClick={()=>{setExerciseIndex(exerciseIndex-1);setExerciseSeconds(10);setExerciseRunning(false)}}>← 上一個</button><span>{completedExercises.includes(exerciseIndex)?"✓ 已完成":`${exerciseIndex+1}／${exercises.length}`}</span><button disabled={exerciseIndex===exercises.length-1} onClick={()=>{setExerciseIndex(exerciseIndex+1);setExerciseSeconds(10);setExerciseRunning(false)}}>下一個 →</button></div></div><div className="exercise-guide"><p>今日輕鬆運動・已完成 {completedExercises.length}／{exercises.length}</p><h1>{exercise.title}</h1><h2>{exercise.hint}</h2>{(exerciseRunning||exerciseSeconds<10)&&<div className={exerciseRunning?"big-countdown ticking":"big-countdown"}><strong key={exerciseSeconds}>{exerciseSeconds===0?"完成":exerciseSeconds}</strong><small>{exerciseSeconds===0?"做得很好！":exerciseRunning?"慢慢保持":"已暫停"}</small></div>}<ul>{exercise.steps.map(step=><li key={step}>{step}</li>)}</ul><div className="exercise-caution">若感到疼痛或頭暈，請立即停止並休息。</div><div className="exercise-actions"><button onClick={()=>speak(`${exercise.voice}不舒服就馬上停止。`)}>🔊 唸給我聽</button><button className="start-exercise" onClick={()=>{if(exerciseSeconds===0)setExerciseSeconds(10);setExerciseRunning(!exerciseRunning)}}>{exerciseRunning?"暫停":exerciseSeconds===0?"再做一次":exerciseSeconds<10?"繼續":"開始 10 秒"}</button></div>{exerciseSeconds===0&&exerciseIndex<exercises.length-1&&<button className="next-after-complete" onClick={()=>{setExerciseIndex(exerciseIndex+1);setExerciseSeconds(10)}}>做得很好，下一個動作 →</button>}</div></section></div>}
       </section>}
       {mode === "checkin" && <section className="checkin-screen"><div className="step-row"><button onClick={() => setMode("home")}>← 回首頁</button><span>需要幫忙</span></div><div className="question-card help-card-screen"><span className="question-icon">♥</span><p>我們在這裡陪您</p><h1>想要我們怎麼幫忙？</h1><h2>只要選一個最接近的就好。</h2><div className="help-choice-grid">{helpChoices.map((choice,index)=><button key={choice} onClick={()=>requestHelp(choice)}><span>{["＋","☀","☎"][index]}</span><strong>{choice}</strong></button>)}</div></div></section>}
-      {mode === "done" && <section className="checkin-screen"><div className="complete-card"><div className={helpReason?"complete-mark caring":resting?"complete-mark resting":"complete-mark"}>{helpReason?"♥":resting?"☁":"✓"}</div><p>{helpReason?"關懷訊息已送出":resting?"今天慢慢來":"今日平安報到"}</p><h1>{helpReason?"收到，我們陪著您":resting?"好的，今天休息一下":"收到，今天也辛苦了！"}</h1><h2>{helpReason?`已告訴小芳：「${helpReason}」，她會來關心您。`:resting?"沒有未完成，也不會扣分。有需要時再回來找暖日。":"已經幫您告訴小芳，今天一切都好。"}</h2>{helpReason?<div className="warm-note">現在先坐下休息，不用著急。</div>:resting?<div className="warm-note rest-note">今天不需要完成任何事情，照自己的步調就好。</div>:<div className="joke-card"><div className="joke-label"><span>☺</span><strong>今日笑一個</strong></div><p>{jokes[jokeIndex]}</p><div className="joke-actions"><button onClick={()=>speak(jokes[jokeIndex])}>🔊 溫柔唸給我聽</button><button onClick={()=>setJokeIndex((jokeIndex+1)%jokes.length)}>再說一個</button></div></div>}<button className="home-return" onClick={()=>setMode("home")}>回到首頁</button></div></section>}
+      {mode === "done" && <section className="checkin-screen"><div className="complete-card"><div className={helpReason?"complete-mark caring":resting?"complete-mark resting":"complete-mark"}>{helpReason?"♥":resting?"☁":"✓"}</div><p>{helpReason?"關懷訊息已送出":resting?"今天慢慢來":"今日平安報到"}</p><h1>{helpReason?"收到，我們陪著您":resting?"好的，今天休息一下":"收到，今天也辛苦了！"}</h1><h2>{helpReason?`已告訴小芳：「${helpReason}」，她會來關心您。`:resting?"沒有未完成，也不會扣分。有需要時再回來找暖日。":"已經幫您告訴小芳，今天一切都好。"}</h2>{!resting&&lineStatus!=="idle"&&<div className={lineStatus==="failed"?"line-notice failed":"line-notice"}>{lineStatus==="sending"?"LINE 通知傳送中…":lineStatus==="sent"?"✓ 已傳送 LINE 給小芳":"LINE 尚未送達，請確認已加入暖日官方帳號"}</div>}{helpReason?<div className="warm-note">現在先坐下休息，不用著急。</div>:resting?<div className="warm-note rest-note">今天不需要完成任何事情，照自己的步調就好。</div>:<div className="joke-card"><div className="joke-label"><span>☺</span><strong>今日笑一個</strong></div><p>{jokes[jokeIndex]}</p><div className="joke-actions"><button onClick={()=>speak(jokes[jokeIndex])}>🔊 溫柔唸給我聽</button><button onClick={()=>setJokeIndex((jokeIndex+1)%jokes.length)}>再說一個</button></div></div>}<button className="home-return" onClick={()=>setMode("home")}>回到首頁</button></div></section>}
     </>}
   </main>;
 }
