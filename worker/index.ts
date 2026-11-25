@@ -58,7 +58,13 @@ const worker = {
         const text = event.message.text?.trim() ?? "";
         const match = text.match(/^留言[：:]\s*(.+)$/s);
         const message = match?.[1]?.trim().slice(0, 80) ?? "";
-        const replyText = message ? "已經把留言放到暖日的陪伴卡了 ☀️" : "請輸入「留言：想對長輩說的話」";
+        const replyText = message
+          ? "已經把留言放到暖日的陪伴卡了 ☀️"
+          : text === "使用方式"
+            ? "要把關心送到暖日，請輸入：\n留言：晚上我會打電話給您\n\n留言最多 80 個字，送出後約 15 秒會顯示在長輩端。"
+            : text === "使用須知"
+              ? "暖日是日常健康陪伴與家人關懷工具，不是醫療診斷或緊急救援服務。若長輩身體明顯不適或遇到緊急狀況，請立即聯絡家人、119 或醫療單位。"
+              : "請輸入「留言：想對長輩說的話」，或使用下方選單查看說明。";
         if (message) await env.DB.prepare("INSERT INTO family_messages (message) VALUES (?)").bind(message).run();
         if (event.replyToken) {
           ctx.waitUntil(fetch("https://api.line.me/v2/bot/message/reply", {
@@ -113,3 +119,4 @@ const worker = {
 };
 
 export default worker;
+
