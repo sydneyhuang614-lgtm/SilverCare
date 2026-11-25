@@ -1,5 +1,11 @@
 # 暖日 WarmDay
 
+## 線上展示
+
+**固定公開網址：[開啟暖日 WarmDay](https://warmday-sydney.sydneyhuang614.chatgpt.site)**
+
+此網址會持續保留；之後更新功能時，仍會發布到同一個網址。
+
 暖日（WarmDay）是一款為長輩與家人照顧者設計的健康陪伴 Web App。以「每天多一點健康，多一點安心」為理念，讓健康管理成為溫暖而不造成負擔的日常。
 
 > 一按就安心，需要時才多問一句。
@@ -78,3 +84,4 @@ pnpm build
 - Web Speech API
 - Web Bluetooth API
 - Vibration API
+
