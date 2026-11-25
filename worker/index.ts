@@ -6,6 +6,7 @@ interface Env {
   ASSETS: Fetcher;
   DB: D1Database;
   LINE_CHANNEL_ACCESS_TOKEN?: string;
+  LINE_CHANNEL_SECRET?: string;
   LINE_RECIPIENT_USER_ID?: string;
   IMAGES: {
     input(stream: ReadableStream): {
@@ -30,6 +31,45 @@ interface ExecutionContext {
 const worker = {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+
+    if (url.pathname === "/api/family-message" && request.method === "GET") {
+      const latest = await env.DB.prepare("SELECT message, created_at AS createdAt FROM family_messages ORDER BY id DESC LIMIT 1").first<{ message: string; createdAt: string }>();
+      return Response.json({ ok: true, message: latest?.message ?? null, createdAt: latest?.createdAt ?? null }, { headers: { "Cache-Control": "no-store" } });
+    }
+
+    if (url.pathname === "/api/line/webhook" && request.method === "POST") {
+      if (!env.LINE_CHANNEL_SECRET || !env.LINE_CHANNEL_ACCESS_TOKEN || !env.LINE_RECIPIENT_USER_ID) {
+        return Response.json({ ok: false, reason: "not_configured" }, { status: 503 });
+      }
+      const rawBody = await request.text();
+      const signature = request.headers.get("x-line-signature") ?? "";
+      const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(env.LINE_CHANNEL_SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
+      let signatureBytes: Uint8Array;
+      try { signatureBytes = Uint8Array.from(atob(signature), character => character.charCodeAt(0)); }
+      catch { return Response.json({ ok: false }, { status: 401 }); }
+      const valid = await crypto.subtle.verify("HMAC", key, signatureBytes, new TextEncoder().encode(rawBody));
+      if (!valid) return Response.json({ ok: false }, { status: 401 });
+
+      type LineEvent = { type?: string; replyToken?: string; source?: { userId?: string }; message?: { type?: string; text?: string } };
+      let payload: { events?: LineEvent[] };
+      try { payload = JSON.parse(rawBody); } catch { return Response.json({ ok: false }, { status: 400 }); }
+      for (const event of payload.events ?? []) {
+        if (event.type !== "message" || event.message?.type !== "text" || event.source?.userId !== env.LINE_RECIPIENT_USER_ID) continue;
+        const text = event.message.text?.trim() ?? "";
+        const match = text.match(/^留言[：:]\s*(.+)$/s);
+        const message = match?.[1]?.trim().slice(0, 80) ?? "";
+        const replyText = message ? "已經把留言放到暖日的陪伴卡了 ☀️" : "請輸入「留言：想對長輩說的話」";
+        if (message) await env.DB.prepare("INSERT INTO family_messages (message) VALUES (?)").bind(message).run();
+        if (event.replyToken) {
+          ctx.waitUntil(fetch("https://api.line.me/v2/bot/message/reply", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${env.LINE_CHANNEL_ACCESS_TOKEN}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ replyToken: event.replyToken, messages: [{ type: "text", text: replyText }] }),
+          }));
+        }
+      }
+      return Response.json({ ok: true });
+    }
 
     if (url.pathname === "/api/line/notify" && request.method === "POST") {
       const origin = request.headers.get("Origin");
@@ -73,4 +113,3 @@ const worker = {
 };
 
 export default worker;
-
